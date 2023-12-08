@@ -12,7 +12,9 @@ import com.example.backend.store.ClubStore;
 import com.example.backend.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,8 @@ public class MembershipServiceLogic implements MembershipService {
         membership.setMember(member);
         membership.setRole(Role.MEMBER);
 
+        membershipStore.save(membership);
+
         club.getMemberships().add(membership);
         member.getMemberships().add(membership);
 
@@ -62,7 +66,12 @@ public class MembershipServiceLogic implements MembershipService {
 
     @Override
     public Page<MembershipDTO> findAllMembershipsByClub(Long clubId, Pageable pageable) {
-        Page<Membership> memberships = Optional.ofNullable(membershipStore.findByClub_ClubId(clubId, pageable))
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
+        Page<Membership> memberships = Optional.ofNullable(membershipStore.findByClub_ClubId(clubId, sortedByCreatedTime))
                 .orElseThrow(() -> new NoSuchClubException("No such club with id : " + clubId));
 
         return memberships.map(membership -> {
@@ -74,7 +83,12 @@ public class MembershipServiceLogic implements MembershipService {
 
     @Override
     public Page<MembershipDTO> findAllMembershipsByMember(Long currentUserId, Pageable pageable) {
-        Page<Membership> memberships = Optional.ofNullable(membershipStore.findByMember_MemberId(currentUserId, pageable))
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
+        Page<Membership> memberships = Optional.ofNullable(membershipStore.findByMember_MemberId(currentUserId, sortedByCreatedTime))
                 .orElseThrow(() -> new NoSuchMemberException("No such member with id : " + currentUserId));
 
         return memberships.map(membership -> {
@@ -129,18 +143,6 @@ public class MembershipServiceLogic implements MembershipService {
             club.getMemberships().remove(foundMembership);
             member.getMemberships().remove(foundMembership);
 
-//            membershipStore.delete(foundMembership);
             membershipStore.deleteByMembershipId(membershipId);
-    }
-
-    private Role getCurrentUserRoleInClub(Long clubId, Long currentUserId) {
-        Club club = clubStore.findById(clubId)
-                .orElseThrow(() -> new NoSuchClubException("No such club with id : " + clubId));
-
-        return club.getMemberships().stream()
-                .filter(membership -> membership.getMember().getMemberId() == currentUserId)
-                .findFirst()
-                .map(Membership::getRole)
-                .orElseThrow(() -> new NotInClubException("Current User is not in this club."));
     }
 }

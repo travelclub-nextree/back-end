@@ -37,6 +37,7 @@ public class MembershipDTO {
         this.memberId = membership.getMember().getMemberId();
         this.clubId = membership.getClub().getClubId();
         this.createdTime = membership.getCreatedTime();
+        this.updatedTime = membership.getUpdatedTime();
         this.memberNickname = membership.getMember().getMemberNickname();
         this.clubName = membership.getClub().getClubName();
     }

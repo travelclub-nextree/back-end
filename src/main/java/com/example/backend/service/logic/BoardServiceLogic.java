@@ -11,7 +11,9 @@ import com.example.backend.store.ClubStore;
 import com.example.backend.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +67,12 @@ public class BoardServiceLogic implements BoardService {
 
     @Override
     public Page<BoardDTO> findByClubId(Long clubId, Pageable pageable) {
-        Page<Board> boards = Optional.ofNullable(boardStore.findByClub_ClubId(clubId, pageable))
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
+        Page<Board> boards = Optional.ofNullable(boardStore.findByClub_ClubId(clubId, sortedByCreatedTime))
                 .orElseThrow(() -> new NoSuchClubException("No such club with id : " + clubId));
 
         return boards.map(Board::EntityToDTO);
