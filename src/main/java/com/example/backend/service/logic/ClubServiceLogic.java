@@ -12,7 +12,9 @@ import com.example.backend.store.MembershipStore;
 import com.example.backend.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +62,12 @@ public class ClubServiceLogic implements ClubService {
 
     @Override
     public Page<ClubDTO> findAllClubs(Pageable pageable) {
-        return clubStore.findAll(pageable)
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
+        return clubStore.findAll(sortedByCreatedTime)
                 .map(ClubDTO::new);
     }
 

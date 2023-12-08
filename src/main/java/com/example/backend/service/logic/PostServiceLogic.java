@@ -8,11 +8,19 @@ import com.example.backend.store.ClubStore;
 import com.example.backend.store.MemberStore;
 import com.example.backend.store.PostStore;
 import com.example.backend.util.*;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -47,17 +55,38 @@ public class PostServiceLogic implements PostService {
 
     @Override
     public PostDTO findPost(Long postId) {
-        return postStore.findById(postId)
-                .map(post -> new PostDTO(post))
+        Post post = postStore.findById(postId)
                 .orElseThrow(() -> new NoSuchPostingException("No such post with id : " + postId));
+
+        HttpSession session =
+                ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getSession();
+        Set<Long> viewedPosts = (Set<Long>) session.getAttribute("viewedPosts");
+
+        if (viewedPosts == null) {
+            viewedPosts = new HashSet<>();
+        }
+
+        if (!viewedPosts.contains(postId)) {
+            post.setPostViewCount(post.getPostViewCount() + 1);
+            postStore.save(post);
+            viewedPosts.add(postId);
+            session.setAttribute("viewedPosts", viewedPosts);
+        }
+
+        return new PostDTO(post);
     }
 
     @Override
     public Page<PostDTO> findByTitleInBoard(Long boardId, String postTitle, Pageable pageable) {
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
         boardStore.findById(boardId)
                 .orElseThrow(() -> new NoSuchBoardException("No such board with id : " + boardId));
 
-        Page<Post> posts = postStore.findByBoard_BoardIdAndPostTitle(boardId, postTitle, pageable);
+        Page<Post> posts = postStore.findByBoard_BoardIdAndPostTitle(boardId, postTitle, sortedByCreatedTime);
         if (posts.isEmpty()) {
             throw new NoSuchPostingException("No posts with the title : " + postTitle);
         }
@@ -67,10 +96,15 @@ public class PostServiceLogic implements PostService {
 
     @Override
     public Page<PostDTO> findByBoard(Long boardId, Pageable pageable) {
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
         boardStore.findById(boardId)
                 .orElseThrow(() -> new NoSuchBoardException("No such board with id : " + boardId));
 
-        Page<Post> posts = postStore.findByBoard_BoardId(boardId, pageable);
+        Page<Post> posts = postStore.findByBoard_BoardId(boardId, sortedByCreatedTime);
         if (posts.isEmpty()) {
                 throw new NoSuchPostingException("No posts in the board.");
         }
@@ -80,12 +114,17 @@ public class PostServiceLogic implements PostService {
 
     @Override
     public Page<PostDTO> findByClubAndMember(Long clubId, Long memberId, Pageable pageable) {
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
         Club club = clubStore.findById(clubId)
                 .orElseThrow(() -> new NoSuchClubException("No such club with id : " + clubId));
         Member member = memberStore.findById(memberId)
                 .orElseThrow(() -> new NoSuchMemberException("No such member with id : " + memberId));
 
-        Page<Post> posts = postStore.findByBoard_ClubAndMember(club, member, pageable);
+        Page<Post> posts = postStore.findByBoard_ClubAndMember(club, member, sortedByCreatedTime);
         if (posts.isEmpty()) {
             throw new NoSuchPostingException("No posts in the club.");
         }

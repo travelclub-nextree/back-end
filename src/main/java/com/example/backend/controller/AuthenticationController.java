@@ -7,6 +7,8 @@ import com.example.backend.jwt.JwtTokenProvider;
 import com.example.backend.service.MemberService;
 import com.example.backend.util.NoSuchEmailException;
 import com.example.backend.util.PasswordNotMatchException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthenticationController {
     private final MemberService memberService;
     private final JwtTokenProvider jwtTokenProvider;
@@ -39,6 +41,27 @@ public class AuthenticationController {
         } catch (NoSuchEmailException | PasswordNotMatchException e) {
             responseDTO.setErrorMessage(e.getMessage());
             responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+            return ResponseEntity.badRequest().body(responseDTO);
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        ResponseDTO<Map<String, String>> responseDTO = new ResponseDTO<>();
+        try {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+
+            Map<String, String> returnMap = new HashMap<>();
+            returnMap.put("message", "Logout Succeed.");
+            responseDTO.setItem(returnMap);
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            return ResponseEntity.ok().body(responseDTO);
+        } catch (Exception e) {
+            responseDTO.setErrorMessage(e.getMessage());
+            responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
             return ResponseEntity.badRequest().body(responseDTO);
         }
     }

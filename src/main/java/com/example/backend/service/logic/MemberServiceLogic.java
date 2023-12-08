@@ -8,7 +8,9 @@ import com.example.backend.store.MemberStore;
 import com.example.backend.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +47,12 @@ public class MemberServiceLogic implements MemberService {
 
     @Override
     public Page<MemberDTO> findByNickname(String memberNickname, Pageable pageable) {
-        Page<Member> members = memberStore.findMembersByMemberNickname(memberNickname, pageable);
+        Pageable sortedByCreatedTime = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdTime").descending());
+
+        Page<Member> members = memberStore.findMembersByMemberNickname(memberNickname, sortedByCreatedTime);
         if (members.isEmpty()) {
             throw new NoSuchMemberException("No such member with nickname : " + memberNickname);
         }
