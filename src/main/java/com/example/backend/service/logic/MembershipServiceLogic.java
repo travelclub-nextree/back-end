@@ -125,7 +125,8 @@ public class MembershipServiceLogic implements MembershipService {
                         String.format("No such membership with clubId : [%s] memberId : [%s]", clubId, currentUserId)));
 
         if (foundMembership.getMember().getMemberId() == currentUserId) {
-            membershipStore.deleteByClub_IdAndMember_Id(clubId, currentUserId);
+            membershipStore.delete(foundMembership);
+//            membershipStore.deleteByClub_IdAndMember_Id(clubId, currentUserId);
         } else {
             throw new NoPermissionToRemoveMembershipException("Does not have permission to delete this membership.");
         }
@@ -143,6 +144,7 @@ public class MembershipServiceLogic implements MembershipService {
             club.getMemberships().remove(foundMembership);
             member.getMemberships().remove(foundMembership);
 
-            membershipStore.deleteByMembershipId(membershipId);
+//            membershipStore.deleteByMembershipId(membershipId);
+        membershipStore.delete(foundMembership);
     }
 }
