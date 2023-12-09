@@ -21,7 +21,7 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         }
 
         String token = jwtTokenProvider.resolveToken(request);
-        System.out.println("token : " + token);
+
         if (token != null && jwtTokenProvider.validationToken(token)) {
             return true;
         } else {
